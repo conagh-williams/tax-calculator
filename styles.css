@@ -101,3 +101,17 @@ body {
 
 .stage { display: none; }
 .stage.active { display: block; }
+
+.override-btn {
+  background: transparent;
+  border: 1px solid #2A2A2A;
+  color: #555;
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.override-btn:hover { border-color: #555; color: #888; }

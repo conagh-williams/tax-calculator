@@ -279,6 +279,62 @@ function goToSummary() {
   const totalIncome = income.reduce((s, t) => s + t.amount, 0);
   const totalOutgoing = Math.abs(outgoings.reduce((s, t) => s + t.amount, 0));
 
+  recalcSummaryCards(income, outgoings, totalIncome, totalOutgoing);
+
+  document.getElementById('incomeHdr').textContent = `Income · ${income.length} transactions`;
+  document.getElementById('incomeList').innerHTML = income.map(t => `
+    <div class="txn">
+      <div class="txn-date">${t.date}</div>
+      <div class="txn-desc">${t.description}</div>
+      <div class="txn-amt inc">+${fmt(t.amount)}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('outgoingsHdr').textContent = `Outgoings · ${outgoings.length} transactions`;
+  document.getElementById('outgoingsList').innerHTML = outgoings.map(t => {
+    const cat = categorised[t.id]?.category;
+    const isDeductible = cat === 'deductible' || (cat === 'review' && decisions[t.id] === true);
+    const chipClass = isDeductible ? 'chip-tax' : 'chip-per';
+    const chipLabel = isDeductible ? 'Deductible' : 'Ignore';
+    return `
+      <div class="txn" id="sum-${t.id}">
+        <div class="txn-date">${t.date}</div>
+        <div class="txn-desc">${t.description}</div>
+        <span class="chip ${chipClass}" id="chip-${t.id}">${chipLabel}</span>
+        <button class="override-btn" onclick="overrideTxn('${t.id}')">Edit</button>
+        <div class="txn-amt out">-${fmt(t.amount)}</div>
+      </div>
+    `;
+  }).join('');
+
+  setStage('summary');
+}
+
+function overrideTxn(id) {
+  const cat = categorised[id]?.category;
+  const currentlyDeductible = cat === 'deductible' || (cat === 'review' && decisions[id] === true);
+
+  if (currentlyDeductible) {
+    if (categorised[id]) categorised[id].category = 'ignore';
+    decisions[id] = false;
+  } else {
+    if (categorised[id]) categorised[id].category = 'deductible';
+    decisions[id] = true;
+  }
+
+  const chip = document.getElementById('chip-' + id);
+  const nowDeductible = !currentlyDeductible;
+  chip.className = 'chip ' + (nowDeductible ? 'chip-tax' : 'chip-per');
+  chip.textContent = nowDeductible ? 'Deductible' : 'Ignore';
+
+  const income = transactions.filter(t => t.type === 'income');
+  const outgoings = transactions.filter(t => t.type === 'outgoing');
+  const totalIncome = income.reduce((s, t) => s + t.amount, 0);
+  const totalOutgoing = Math.abs(outgoings.reduce((s, t) => s + t.amount, 0));
+  recalcSummaryCards(income, outgoings, totalIncome, totalOutgoing);
+}
+
+function recalcSummaryCards(income, outgoings, totalIncome, totalOutgoing) {
   const taxDeductible = outgoings.reduce((s, t) => {
     const cat = categorised[t.id]?.category;
     if (cat === 'deductible') return s + Math.abs(t.amount);
@@ -294,34 +350,6 @@ function goToSummary() {
   document.getElementById('sumOutgoings').textContent = fmt(totalOutgoing);
   document.getElementById('sumDeductible').textContent = fmt(taxDeductible);
   document.getElementById('sumTax').textContent = fmt(taxOwed);
-
-  document.getElementById('incomeHdr').textContent = `Income · ${income.length} transactions`;
-  document.getElementById('incomeList').innerHTML = income.map(t => `
-    <div class="txn">
-      <div class="txn-date">${t.date}</div>
-      <div class="txn-desc">${t.description}</div>
-      <div class="txn-amt inc">+${fmt(t.amount)}</div>
-    </div>
-  `).join('');
-
-  document.getElementById('outgoingsHdr').textContent = `Outgoings · ${outgoings.length} transactions`;
-  document.getElementById('outgoingsList').innerHTML = outgoings.map(t => {
-    const cat = categorised[t.id]?.category;
-    const isDeductible = cat === 'deductible' || (cat === 'review' && decisions[t.id] === true);
-    const chip = isDeductible
-      ? `<span class="chip chip-tax">Deductible</span>`
-      : `<span class="chip chip-per">Ignore</span>`;
-    return `
-      <div class="txn">
-        <div class="txn-date">${t.date}</div>
-        <div class="txn-desc">${t.description}</div>
-        ${chip}
-        <div class="txn-amt out">-${fmt(t.amount)}</div>
-      </div>
-    `;
-  }).join('');
-
-  setStage('summary');
 }
 
 function downloadCSV() {
