@@ -285,7 +285,10 @@ function goToSummary() {
   document.getElementById('incomeList').innerHTML = income.map(t => `
     <div class="txn">
       <div class="txn-date">${t.date}</div>
-      <div class="txn-desc">${t.description}</div>
+<div class="txn-desc">
+          ${t.description}
+          <div style="font-size:11px;color:#3A3A3A;margin-top:2px;">${[t.reference, t.starlingCat, t.transactionType].filter(Boolean).join(' · ')}</div>
+        </div>
       <div class="txn-amt inc">+${fmt(t.amount)}</div>
     </div>
   `).join('');
@@ -299,7 +302,10 @@ function goToSummary() {
     return `
       <div class="txn" id="sum-${t.id}">
         <div class="txn-date">${t.date}</div>
-        <div class="txn-desc">${t.description}</div>
+<div class="txn-desc">
+          ${t.description}
+          <div style="font-size:11px;color:#3A3A3A;margin-top:2px;">${[t.reference, t.starlingCat, t.transactionType].filter(Boolean).join(' · ')}</div>
+        </div>
         <span class="chip ${chipClass}" id="chip-${t.id}">${chipLabel}</span>
         <button class="override-btn" onclick="overrideTxn('${t.id}')">Edit</button>
         <div class="txn-amt out">-${fmt(t.amount)}</div>
