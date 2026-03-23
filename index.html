@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tax Calculator</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div class="header">
+    <div class="header-eyebrow">Self-Assessment</div>
+    <div class="header-title">Tax Calculator</div>
+  </div>
+  <div class="container">
+    <div class="progress-bar">
+      <div class="progress-step active" id="step0"></div>
+      <div class="progress-step" id="step1"></div>
+      <div class="progress-step" id="step2"></div>
+      <div class="progress-step" id="step3"></div>
+    </div>
+
+    <!-- Upload -->
+    <div class="stage active" id="stage-upload">
+      <div class="api-bar">
+        <label>API Key</label>
+        <input type="password" id="apiKey" placeholder="sk-ant-..."/>
+      </div>
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-icon">↑</div>
+        <h3>Drop your CSV here</h3>
+        <p>Or click to browse</p>
+      </div>
+      <div class="error-msg" id="errorMsg" style="display:none"></div>
+      <input type="file" accept=".csv" id="csvFile" style="display:none"/>
+    </div>
+
+    <!-- Processing -->
+    <div class="stage" id="stage-processing">
+      <div class="processing-wrap">
+        <div class="spinner"></div>
+        <h3>Categorising your transactions</h3>
+        <p id="processingInfo">Analysing...</p>
+      </div>
+    </div>
+
+    <!-- Review -->
+    <div class="stage" id="stage-review">
+      <div class="stage-label" id="reviewLabel">Review</div>
+      <div class="auto-info" id="autoInfo" style="display:none"></div>
+      <div id="reviewGroups"></div>
+      <button class="cta" id="reviewCta" onclick="goToSummary()">See Results →</button>
+      <button class="back-btn" onclick="goBack('upload')">← Start Over</button>
+    </div>
+
+    <!-- Summary -->
+    <div class="stage" id="stage-summary">
+      <div class="stage-label">Summary</div>
+      <div class="summary-grid">
+        <div class="s-card"><div class="s-label">Total Income</div><div class="s-val g" id="sumIncome">£0</div></div>
+        <div class="s-card"><div class="s-label">Total Outgoings</div><div class="s-val" id="sumOutgoings">£0</div></div>
+        <div class="s-card"><div class="s-label">Tax Deductible</div><div class="s-val" id="sumDeductible">£0</div></div>
+        <div class="s-card hl"><div class="s-label">Estimated Tax Owed</div><div class="s-val g" id="sumTax">£0</div></div>
+      </div>
+      <div class="section-block">
+        <div class="section-hdr" id="incomeHdr">Income</div>
+        <div id="incomeList"></div>
+      </div>
+      <div class="section-block">
+        <div class="section-hdr" id="outgoingsHdr">Outgoings</div>
+        <div id="outgoingsList"></div>
+      </div>
+      <button class="download-btn" onclick="downloadCSV()">↓ Download Summary CSV</button>
+      <button class="back-btn" onclick="goBack('review')">← Back to Review</button>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
