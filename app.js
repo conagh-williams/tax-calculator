@@ -282,16 +282,21 @@ function goToSummary() {
   recalcSummaryCards(income, outgoings, totalIncome, totalOutgoing);
 
   document.getElementById('incomeHdr').textContent = `Income · ${income.length} transactions`;
-  document.getElementById('incomeList').innerHTML = income.map(t => `
-    <div class="txn">
-      <div class="txn-date">${t.date}</div>
-<div class="txn-desc">
+  document.getElementById('incomeList').innerHTML = income.map(t => {
+    const isIgnored = decisions['inc_' + t.id] === true;
+    return `
+      <div class="txn" id="sum-inc-${t.id}">
+        <div class="txn-date">${t.date}</div>
+        <div class="txn-desc">
           ${t.description}
           <div style="font-size:11px;color:#3A3A3A;margin-top:2px;">${[t.reference, t.starlingCat, t.transactionType].filter(Boolean).join(' · ')}</div>
         </div>
-      <div class="txn-amt inc">+${fmt(t.amount)}</div>
-    </div>
-  `).join('');
+        <span class="chip ${isIgnored ? 'chip-per' : 'chip-tax'}" id="chip-inc-${t.id}">${isIgnored ? 'Ignore' : 'Income'}</span>
+        <button class="override-btn" onclick="overrideIncome('${t.id}')" title="Toggle">↻</button>
+        <div class="txn-amt inc">+${fmt(t.amount)}</div>
+      </div>
+    `;
+  }).join('');
 
   document.getElementById('outgoingsHdr').textContent = `Outgoings · ${outgoings.length} transactions`;
   document.getElementById('outgoingsList').innerHTML = outgoings.map(t => {
@@ -302,18 +307,32 @@ function goToSummary() {
     return `
       <div class="txn" id="sum-${t.id}">
         <div class="txn-date">${t.date}</div>
-<div class="txn-desc">
+        <div class="txn-desc">
           ${t.description}
           <div style="font-size:11px;color:#3A3A3A;margin-top:2px;">${[t.reference, t.starlingCat, t.transactionType].filter(Boolean).join(' · ')}</div>
         </div>
         <span class="chip ${chipClass}" id="chip-${t.id}">${chipLabel}</span>
-        <button class="override-btn" onclick="overrideTxn('${t.id}')">Edit</button>
+        <button class="override-btn" onclick="overrideTxn('${t.id}')" title="Toggle">↻</button>
         <div class="txn-amt out">-${fmt(t.amount)}</div>
       </div>
     `;
   }).join('');
 
   setStage('summary');
+}
+
+function overrideIncome(id) {
+  const isIgnored = decisions['inc_' + id] === true;
+  decisions['inc_' + id] = !isIgnored;
+
+  const chip = document.getElementById('chip-inc-' + id);
+  chip.className = 'chip ' + (!isIgnored ? 'chip-per' : 'chip-tax');
+  chip.textContent = !isIgnored ? 'Ignore' : 'Income';
+
+  const income = transactions.filter(t => t.type === 'income');
+  const outgoings = transactions.filter(t => t.type === 'outgoing');
+  const totalOutgoing = Math.abs(outgoings.reduce((s, t) => s + t.amount, 0));
+  recalcSummaryCards(income, outgoings, null, totalOutgoing);
 }
 
 function overrideTxn(id) {
@@ -335,12 +354,15 @@ function overrideTxn(id) {
 
   const income = transactions.filter(t => t.type === 'income');
   const outgoings = transactions.filter(t => t.type === 'outgoing');
-  const totalIncome = income.reduce((s, t) => s + t.amount, 0);
   const totalOutgoing = Math.abs(outgoings.reduce((s, t) => s + t.amount, 0));
-  recalcSummaryCards(income, outgoings, totalIncome, totalOutgoing);
+  recalcSummaryCards(income, outgoings, null, totalOutgoing);
 }
 
 function recalcSummaryCards(income, outgoings, totalIncome, totalOutgoing) {
+  const adjustedIncome = income
+    .filter(t => decisions['inc_' + t.id] !== true)
+    .reduce((s, t) => s + t.amount, 0);
+
   const taxDeductible = outgoings.reduce((s, t) => {
     const cat = categorised[t.id]?.category;
     if (cat === 'deductible') return s + Math.abs(t.amount);
@@ -348,11 +370,11 @@ function recalcSummaryCards(income, outgoings, totalIncome, totalOutgoing) {
     return s;
   }, 0);
 
-  const taxableIncome = Math.max(0, totalIncome - taxDeductible);
+  const taxableIncome = Math.max(0, adjustedIncome - taxDeductible);
   const personalAllowance = 12570;
   const taxOwed = Math.max(0, (taxableIncome - personalAllowance) * 0.20);
 
-  document.getElementById('sumIncome').textContent = fmt(totalIncome);
+  document.getElementById('sumIncome').textContent = fmt(adjustedIncome);
   document.getElementById('sumOutgoings').textContent = fmt(totalOutgoing);
   document.getElementById('sumDeductible').textContent = fmt(taxDeductible);
   document.getElementById('sumTax').textContent = fmt(taxOwed);
@@ -365,7 +387,8 @@ function downloadCSV() {
   const rows = [['Date', 'Description', 'Reference', 'Category', 'Type', 'Amount', 'Tag']];
 
   income.forEach(t => {
-    rows.push([t.date, `"${t.description}"`, `"${t.reference}"`, t.starlingCat, t.transactionType, t.amount.toFixed(2), 'Income']);
+    const isIgnored = decisions['inc_' + t.id] === true;
+    rows.push([t.date, `"${t.description}"`, `"${t.reference}"`, t.starlingCat, t.transactionType, t.amount.toFixed(2), isIgnored ? 'Ignore' : 'Income']);
   });
 
   outgoings.forEach(t => {
